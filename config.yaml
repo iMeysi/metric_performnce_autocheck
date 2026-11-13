@@ -1,0 +1,44 @@
+# Resource-bounded profile; see docs/README.fa.md for the upstream-size profile.
+prometheus_url: http://prometheus:9090
+model_dir: /data/models
+port: 8080
+step_seconds: 60
+poll_seconds: 60
+lag_seconds: 120
+rolling_seconds: 259200   # 3d; for 15d increase max_rows to at least 21601
+retrain_seconds: 7200
+parallelism: 1
+window_length: 100
+z_dim: 3
+hidden: 128              # upstream: 500
+dense: 128               # upstream: 500
+nf_layers: 20
+n_z: 8
+batch_size: 32
+max_epoch: 10
+seed: 42
+tf_threads: 1
+pot_q: 0.001
+pot_level: 0.95
+min_peaks: 20
+min_calibration: 500
+fill_limit: 2
+max_missing_fraction: 0.02
+max_groups: 8
+max_features: 32
+max_rows: 10000
+chunk_rows: 1000
+max_response_bytes: 16777216
+request_timeout: 30
+train_timeout: 3600
+inference_timeout: 120
+metric_ttl: 240
+max_model_age: 86400
+# All queries in ONE group describe the same monitored entity.
+# Replace job="api" with your actual Prometheus labels.
+groups:
+  - name: api
+    queries:
+      - 'sum(rate(http_requests_total{job="api"}[5m]))'
+      - 'sum(rate(http_request_duration_seconds_sum{job="api"}[5m])) / clamp_min(sum(rate(http_request_duration_seconds_count{job="api"}[5m])), 0.001)'
+      - 'sum(process_resident_memory_bytes{job="api"})'
