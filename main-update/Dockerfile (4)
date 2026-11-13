@@ -1,0 +1,11 @@
+# Optional PAD-compatible overrides; queries are separated with SEMICOLON,
+# never comma (PromQL selectors/functions commonly contain commas).
+FLT_PROM_URL=http://prometheus:9090
+# FLT_METRICS_LIST=sum(rate(http_requests_total{job="api"}[5m]));sum(process_resident_memory_bytes{job="api"})
+FLT_ROLLING_TRAINING_WINDOW_SIZE=3d
+FLT_RETRAINING_INTERVAL_MINUTES=120
+FLT_PARALLELISM=1
+# Prefer a projected/rotated token file over a literal secret:
+# PROM_TOKEN_FILE=/var/run/secrets/kubernetes.io/serviceaccount/token
+# PROM_CA_FILE=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+# FLT_PROM_ACCESS_TOKEN=
