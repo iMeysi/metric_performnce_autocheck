@@ -1,0 +1,11 @@
+# Modern experimental branch. Resolve on Python 3.15 Windows x64.
+# Ranges are NOT a reproducible lock or proof of wheel availability.
+torch>=2.15,<2.16
+numpy>=2.3,<3
+pandas>=2.3,<4
+scipy>=1.16,<2
+matplotlib>=3.10,<4
+PyYAML>=6.0.2,<7
+requests>=2.32.4,<3
+prometheus-client>=0.22,<1
+psutil>=7,<9
