@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pad-omni
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pad-omni-service-ca
+  annotations:
+    service.beta.openshift.io/inject-cabundle: "true"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pad-omni-models
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pad-omni
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: pad-omni
+  template:
+    metadata:
+      labels:
+        app: pad-omni
+    spec:
+      serviceAccountName: pad-omni
+      # In-flight training may be killed after this grace period; old CURRENT survives.
+      terminationGracePeriodSeconds: 180
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: exporter
+          # Replace with your built, scanned image (prefer an immutable digest).
+          image: quay.io/YOUR_ORG/pad-omnianomaly:0.1
+          imagePullPolicy: IfNotPresent
+          args: ["python", "app.py", "--config", "/etc/pad-omni/config.yaml"]
+          ports:
+            - name: metrics
+              containerPort: 8080
+          env:
+            - name: FLT_PROM_URL
+              value: https://thanos-querier.openshift-monitoring.svc:9091
+            - name: PROM_TOKEN_FILE
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+            - name: PROM_CA_FILE
+              value: /etc/prom-ca/service-ca.crt
+            - name: FLT_PARALLELISM
+              value: "1"
+          resources:
+            # Starting estimates ONLY; real TF capacity measurements are required.
+            requests:
+              cpu: "500m"
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: metrics
+            periodSeconds: 15
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /etc/pad-omni
+              readOnly: true
+            - name: service-ca
+              mountPath: /etc/prom-ca
+              readOnly: true
+            - name: models
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: pad-omni-config
+        - name: service-ca
+          configMap:
+            name: pad-omni-service-ca
+        - name: models
+          persistentVolumeClaim:
+            claimName: pad-omni-models
+        - name: tmp
+          emptyDir:
+            sizeLimit: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pad-omni
+  labels:
+    app: pad-omni
+spec:
+  # Export fail-closed diagnostics even while the model is not ready.
+  publishNotReadyAddresses: true
+  selector:
+    app: pad-omni
+  ports:
+    - name: metrics
+      port: 8080
+      targetPort: metrics
