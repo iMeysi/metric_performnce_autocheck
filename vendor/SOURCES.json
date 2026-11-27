@@ -1,0 +1,12 @@
+{
+  "OmniAnomaly": {
+    "url": "https://github.com/NetManAIOps/OmniAnomaly",
+    "commit": "7fb0e0acf89ea49908896bcc9f9e80fcfff6baf4"
+  },
+  "PAD": {
+    "url": "https://github.com/AICoE/prometheus-anomaly-detector",
+    "commit": "822abeccf33da2459e35cfb38de762ed3a8b6a56"
+  },
+  "zhusuan": "4386b2a12ae4f4ed8e694e504e51d7dcdfd6f22a",
+  "tfsnippet": "7b43abdbdd29f1914dbc11b961b5d45b9de76653"
+}
